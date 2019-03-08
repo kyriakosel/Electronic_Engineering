@@ -1,0 +1,231 @@
+Arduino code for ADC
+int CLK = 13;                 //Define ports that will be used
+int CS = 12;
+int DIN = 11;
+int counter = 0;
+int i =0;
+
+void setup()
+{
+  pinMode(CLK, OUTPUT);      //Define Output pins
+  pinMode(CS,  OUTPUT);
+  pinMode(DIN, OUTPUT);
+}
+
+void loop()
+{ 
+  digitalWrite(CS,HIGH);		//Determine the first status
+  digitalWrite(CLK,HIGH);
+  digitalWrite(DIN,LOW);
+  
+  for (counter =0; counter<15;counter ++)
+  {
+  digitalWrite (CS,LOW);		//Counter to count the number of clock cycles
+  DIN <= !(CS);
+  digitalWrite(DIN,HIGH);
+  digitalWrite(CLK, LOW);   
+  delay(10);                  
+  digitalWrite(CLK, HIGH);    
+  delay(10);
+  
+  }
+
+if (counter == 15)
+  {
+ 		 digitalWrite(CS,HIGH);
+  digitalWrite(DIN,LOW);		//make CS= !DIN
+  delay(100);
+  counter =0;
+  }
+}
+………………………………………………………………………………………..
+Altera C coding for DAC
+#include <stdio.h>
+ #include "system.h"
+#include "altera_avalon_pio_regs.h"
+#include "alt_types.h"
+
+#define SYNC_PIN_HI 0x01
+#define SYNC_PIN_LO 0x00
+#define SCLK_PIN_HI 0x02
+#define SCLK_PIN_LO 0x00
+#define DATA_PIN_HI 0x04
+#define DATA_PIN_LO 0x00			//Define Variables
+#define LDAC_PIN_HI 0x08
+#define LDAC_PIN_LO 0x00
+
+#define DATA_BITS 16
+#define TOP_DATA_BIT (DATA_BITS - 1)
+
+void Delay(void)
+{
+ 	int i;
+
+ 	for(i=0;I<1000;i++) {			//Introduce a delay
+
+}
+}
+//void delayclock(void)
+//{
+// int i;
+// 
+// for(i=0;i<3;i++) {
+// 
+// }
+//}
+//void delaysync(void)
+//{
+// int i;
+// 
+// for(i=0;i<300;i++) {
+// 
+// }
+//}
+//void delayldac(void)
+//{
+// int i;
+// 
+// for(i=0;i<30;i++) {
+// 
+// }
+//}
+alt_u32 CreateGpioOutputMask(void)
+{
+                  alt_u8 i;
+                  alt_u32 mask = 0x00000000;
+
+// Create mask, one bit at a time		
+for(i=0;i<PORT_A_SPAN;i++) {
+                  mask |= (ALTERA_AVALON_PIO_DIRECTION_OUTPUT << i);
+}
+
+// Report result
+return mask;
+}
+
+void ClockSyncDataLdac(int syncState,int dataState,int ldacState)
+{ 
+
+  alt_u32 clkHiBits = SCLK_PIN_HI; //delayclock(); // Delay to achieve 33 microseconds
+  alt_u32 clkLoBits = SCLK_PIN_LO;
+
+// Mask in Sync state
+if(syncState) {
+       clkHiBits |= SYNC_PIN_HI;
+       clkLoBits |= SYNC_PIN_HI; 
+}
+else {
+    clkHiBits |= SYNC_PIN_LO;
+    clkLoBits |= SYNC_PIN_LO; 
+//delaysync();// Delay to achieve right time
+
+}
+
+// Mask in Data state
+if(dataState) {
+                clkHiBits |= DATA_PIN_HI;
+                clkLoBits |= DATA_PIN_HI;
+}
+else {
+                clkHiBits |= DATA_PIN_LO;
+                clkLoBits |= DATA_PIN_LO;
+}
+
+// Mask in LDAC state
+if(ldacState) {
+                 clkHiBits |= LDAC_PIN_HI;
+                  clkLoBits |= LDAC_PIN_HI; 
+}
+else {
+                 clkHiBits |= LDAC_PIN_LO;//delayldac ();//
+                 clkLoBits |= LDAC_PIN_LO;
+
+}
+
+// Bit-bang the GPIO port
+Delay();
+IOWR_ALTERA_AVALON_PIO_DATA(PORT_A_BASE,clkHiBits);
+Delay();
+IOWR_ALTERA_AVALON_PIO_DATA(PORT_A_BASE,clkLoBits);
+}
+
+void SendDataToDac(alt_u32 data)
+{
+int i;
+alt_u32 mask;
+
+// Clock CS high
+ClockSyncDataLdac(1,0,1);
+
+// Clock CS low for
+for(i=TOP_DATA_BIT;i>=0;i--) { 
+
+// Create mask
+                mask = 0x0001 << i;
+
+                if(data & mask) {
+                       ClockSyncDataLdac(0,1,1);
+}
+                else {
+                       ClockSyncDataLdac(0,0,1);
+}
+}
+
+// Clock SYNC high
+ClockSyncDataLdac(1,0,1); 
+
+// Cycle LDAC low then high
+ClockSyncDataLdac(1,0,0); 
+ClockSyncDataLdac(1,0,1); 
+//delayldac();
+}
+
+
+
+alt_u32 GetDataFromAdc(void)
+{
+alt_u32 data;
+
+
+
+return data; 
+} 
+
+int main(void)
+{
+int count = 0;
+alt_u32 dirMask = CreateGpioOutputMask();
+alt_u32 dacControl1 = 0x8003;
+alt_u32 dacControl2 = 0xA000;
+alt_u32 dacData = 0x0000;
+
+// Setup all pins to output
+IOWR_ALTERA_AVALON_PIO_DIRECTION(PORT_A_BASE,dirMask);
+
+while(1) {
+// printf("Count=%d Dac=%d\n",count,dacData);
+
+count++;
+if(count==3000) {
+// printf("Reloading configuration\n");
+                 SendDataToDac(dacControl1);
+                 SendDataToDac(dacControl2);
+                 count=0;
+}
+
+
+dacData += 10;
+if(dacData==250) {
+                     dacData = 0; 
+}
+SendDataToDac(dacData << 4);
+// dacData--; // to change the data
+
+// adcData = GetDataFromAdc();
+
+}
+
+// Report success
+return 0;
+}
+

@@ -1,0 +1,80 @@
+system=tf(50,[1,2,60]);
+bode(system);
+margin(system)
+
+% system = tf(5,[0.1,0.25,1]);
+% lead = 1.26*tf([0.204,1],[0.03,1]);
+% sys=system*lead;
+% sys_c=feedback(sys,1);
+% step(sys_c,30)
+% bode(system)
+% margin(system)
+
+
+% system= tf(4,[1,1,1]);
+% gain1=1;
+% gain2=40;
+% leadcompensator=tf([1.71,4.85],[0.05,1]);
+% value=system*gain1;
+% %step=tf(1,[1]);
+% lead=leadcompensator*system;
+% figure(1); bode(lead);
+% figure(2);bode(system); 
+% figure(3);step(lead);
+
+
+% sys = tf(4,[1,1,1]);
+% gain = 1;
+% gain2= 10;
+% sysgain1=gain*sys
+% sysgain2=gain2*sys
+% figure(1);bode(sysgain1);
+% figure(2);bode(sysgain2);
+
+
+
+% gain=tf([1,1.55],[1,0]);
+% gs=tf(1,[1,10.1,1]);
+% ols=gs*gain;
+% rlocus(ols)
+
+% cls=feedback(38.3*ols,1);
+% [y,t]=step(cls);
+% plot(t,y);
+% 
+
+
+% gain=tf([1,1],1);
+% gs=tf(1,[1,9,0,0]);
+% multiply=gain*gs;
+% rlocus(multiply)
+% 
+% cls=feedback(1.82*multiply,1);
+% [y,t]=step(cls);
+% plot(t,y);
+
+
+
+
+
+
+% gain=tf([2,1],[0.17,1]);
+% gs=tf(1,[10,1,0]);
+% multiply=gain*gs;
+% rlocus(multiply)
+% 
+% 
+% gain=tf([1,2],[1]);
+% gs=tf([1,3],[1,0,1]);
+% multiply=gain*gs;
+% rlocus(multiply)
+% t1=2;
+% t2=0.175;
+% 
+% system=tf(1,[10,1,0]); %G(s)
+% controller=tf([t1,1],[5*t2,1]); %K(s) 
+% multiply=system*controller;
+% rlocus(multiply)
+% 
+% openloop=system*controller;
+% rlocus(openloop);
