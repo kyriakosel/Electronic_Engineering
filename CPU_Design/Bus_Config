@@ -1,0 +1,44 @@
+library ieee;
+use ieee.std_logic_1164.all;
+
+entity bus_ent is
+    port(
+        io_buf   : inout std_logic_vector (8 downto 1);     
+		  input2        : in std_logic;
+		  clk       : in std_logic;
+		  input     : in std_logic_vector (8 downto 1);
+        output		: out std_logic_vector (8 downto 1));
+		  
+end entity;
+
+architecture arch_bus of bus_ent is
+signal  second  : std_logic_vector (8 downto 1);  -- Flip flop that stores feedback
+signal  first  : std_logic_vector (8 downto 1);  -- flip flop storing input                                            
+
+
+begin                                        
+
+    process(clk)
+	 
+    begin
+    if clk = '1' and clk'event then  -- Begin clock
+        first <= input;                    
+        output <= second;                  
+        end if;
+		  
+    end process; 
+	 
+    process (input2, io_buf)          
+	 
+        begin                   
+		  
+        if( input2 = '0') then 
+            io_buf <= first; 
+            second <= io_buf;
+        else
+            io_buf <= "ZZZZZZZZ"; -- How to represent tristates (z for high impedance)
+            second <= io_buf;
+        end if;
+		  
+    end process;
+end architecture;

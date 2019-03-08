@@ -1,0 +1,53 @@
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+
+entity register16 is
+
+  
+  generic (   n : natural := 15;
+              c : natural := (2**15)-1);
+ 
+  port (
+    clk        : in  std_logic; --input and output staments
+    reset      : in  std_logic;
+    run        : in  std_logic;
+    load_n     : in  std_logic;
+    d          : in  std_logic_vector(n-1 downto 0);
+    enable_bus : in  std_logic;
+    q_out          : out std_logic_vector(n-1 downto 0));
+
+end entity;
+
+architecture reg_architecture of register16 is
+
+  signal out_value : unsigned(n-1 downto 0);
+
+begin 
+
+  st : process (clk)
+  begin  
+    if (rising_edge(clk)) then  -- clock process
+      if reset = '0' then               
+        out_value   <= to_unsigned(0, n);
+      else
+        if load_n = '1' then
+         out_value <= unsigned(d);
+        elsif run = '1' then
+          out_value <= out_value + to_unsigned(1,n);
+        end if;
+      end if;
+    end if;
+
+  end process;
+
+  goto_bus : process( enable_bus, load_n, out_value )  --enable bus to transfer data
+  begin
+    if (enable_bus = '1' and load_n = '0') then q_out <= std_logic_vector(out_value);
+     else q_out         <= (others =>'Z');
+    end if;
+  end process;
+
+
+end architecture;

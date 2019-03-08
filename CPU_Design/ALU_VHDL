@@ -1,0 +1,49 @@
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+
+entity ALU is
+  port(
+    bus1, bus2             : in  std_logic_vector (8 downto 1);
+    alu1, alu2, alu3       : in  std_logic;
+    alu5, alu6, alu4, alu7 : in  std_logic;
+    carry                  : out std_logic);
+end entity;
+architecture alu_impl of ALU is
+ 
+ signal multiplexer1, multiplexer4 : std_logic;
+  signal multiplexer2, multiplexer3 : std_logic_vector(1 downto 0);
+  signal s0, s1, s2                 : std_logic_vector (7 downto 0 );
+  signal q                          : std_logic_vector(1 downto 0);
+  signal sum                        : unsigned (8 downto 0);
+
+begin
+  multiplexer1 <= alu1;
+  multiplexer2 <= alu2&alu3;
+  multiplexer3 <= alu5&alu6;
+  multiplexer4 <= alu7;
+ q<= '0'&alu4;
+  sum<=unsigned(s1)+unsigned(q)+unsigned('0'&s0)
+  with multiplexer1 select s0 <=
+    bus1 when '1',
+  "00000000" when '0',
+  "00000000" when others;
+  with multiplexer2 select s1 <=
+    bus2 when "01",
+  "00000000"when "00",
+  not bus2   when "10",
+  "00000000" when others;
+  with multiplexer3 select
+    s2 <= not bus1 when "11",
+  bus1 and bus2 when "00",
+  bus1 or bus2  when "01",
+  bus1 xor bus2  when "10",
+  "00000000"    when others;
+  with multiplexer4 select s2 <=
+    std_logic_vector(sum(8 downto 1))when '0',
+  s2         when '1',
+  "00000000" when others;
+  carry <= sum(8);
+  
+end architecture;

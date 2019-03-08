@@ -1,0 +1,152 @@
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+entity controlunit is 
+
+        port (
+		        clk, reset, z                : in std_logic;
+		        opcode 	           : in std_logic_vector(3 downto 0);
+		      	loadar,	loaddr,	loadtr       : out std_logic;
+		       	loadir, loadpc, loadr        : out std_logic;
+		       	loadac, loadz,incar, incpc   : out std_logic;     	
+		       	memorybus, busmemory           : out std_logic;
+		       	drhbus, drlbus, pcbus        : out std_logic;
+		       	bustr, busr, busac          : out std_logic;
+		       	alu1, alu2, alu3,alu4, alu5, alu6,alu7 : out std_logic);
+			      
+end entity;
+
+
+architecture hardwired_control_unit of controlunit is
+
+signal states0                                : std_logic_vector(15 downto 0);
+signal states1                                : std_logic_vector(7 downto 0);
+signal fetch1,fetch2,fetch3,nop1,load,clr,inc        : std_logic;
+signal ldac1,ldac2,ldac3,ldac4,ldac5,mvac1,movr1     :std_logic;
+signal stac1,stac2,stac3,stac4,stac5,jump1,jump2,jump3:std_logic;
+signal jmpzx1,jmpzx2,jmpzx3,jmpzf1,jmpzf2            :std_logic;
+signal jpnzx1,jpnzx2,jpnzx3,jpnzf1,jpnzf2,adda        :std_logic;
+signal suba,inaca,claca,anda,ora,xora,nota           :std_logic;
+signal count                                         : unsigned(2 downto 0);
+
+  begin
+
+  counter : process (clk, reset) is 
+
+  begin 
+    if reset = '0' then  	 
+      count <= to_unsigned(0, 3);
+    elsif clk'event and clk = '1' then  -- rising edge of the clock
+      if clr = '1' then
+        count <= to_unsigned(0, 3);
+      elsif inc = '1' then
+        count <= count + 1; 
+      end if;
+    end if;
+  end process;
+
+ with count select states1 <=
+          "00000001" when "000", 
+	  "00000010" when "001",
+	  "00000100" when "010",
+	  "00001000" when "011", 
+	  "00010000" when "100", 
+	  "00100000" when "101",
+	  "01000000" when "110",
+	  "10000000" when "111",  
+	  "00000000" when others;
+
+with opcode select states0 <=
+     "0000000000000001" when "0000",
+	  "0000000000000010" when "0001",
+	  "0000000000000100" when "0010",
+	  "0000000000001000" when "0011",
+	  "0000000000010000" when "0100",
+	  "0000000000100000" when "0101",
+	  "0000000001000000" when "0110",
+	  "0000000010000000" when "0111",
+	  "0000000100000000" when "1000",
+	  "0000001000000000" when "1001",
+	  "0000010000000000" when "1010",
+	  "0000100000000000" when "1011",
+	  "0001000000000000" when "1100",
+	  "0010000000000000" when "1101",
+	  "0100000000000000" when "1110",
+	  "1000000000000000" when "1111",
+	  "0000000000000000" when others;
+
+     fetch1  <= states1(0);
+	  fetch2  <= states1(1);
+	  fetch3  <= states1(2);
+	  nop1    <= states0(0) and states1(3);
+	  ldac1   <= states0(1) and states1(3);
+	  ldac2   <= states0(1) and states1(4);
+	  ldac3   <= states0(1) and states1(5);
+	  ldac4   <= states0(1) and states1(6);
+	  ldac5   <= states0(1) and states1(7);
+	  stac1   <= states0(2) and states1(3);
+	  stac2   <= states0(2) and states1(4);
+	  stac3   <= states0(2) and states1(5);
+	  stac4   <= states0(2) and states1(6);
+	  stac5   <= states0(2) and states1(7);
+	  mvac1   <= states0(3) and states1(3);
+	  movr1   <= states0(4) and states1(3);
+	  jump1   <= states0(5) and states1(3);
+	  jump2   <= states0(5) and states1(4);
+	  jump3   <= states0(5) and states1(5);
+	  jmpzx1  <= states0(6) and states1(3) and z;
+	  jmpzx2  <= states0(6) and states1(4) and z;
+	  jmpzx3  <= states0(6) and states1(5) and z;
+	  jmpzf1  <= states0(6) and states1(3) and not z;
+	  jmpzf2  <= states0(6) and states1(4) and not z;
+	  jpnzx1  <= states0(7) and states1(3) and z;
+	  jpnzx2  <= states0(7) and states1(4) and z;
+	  jpnzx3  <= states0(7) and states1(5) and z;
+	  jpnzf1  <= states0(7) and states1(3) and not z;
+	  jpnzf2  <= states0(7) and states1(4) and not z;
+	  adda    <= states0(8) and states1(3); 
+	  suba    <= states0(9) and states1(3);
+	  inaca   <= states0(10) and states1(3);
+	  claca   <= states0(11) and states1(3);
+	  anda   <= states0(12) and states1(3);
+	  ora    <= states0(13) and states1(3);
+	  xora    <= states0(14) and states1(3);
+	  nota    <= states0(15) and states1(3);
+
+
+
+          loadar <= fetch1 or fetch3 or ldac3 or stac3;
+          loaddr <= fetch2 or ldac1 or ldac2 or ldac4 or stac1 or stac2 or stac4 or jump1 or jump2 or jmpzx1 or jmpzx2 or jmpzx1 or jpnzx2;
+	  loadtr <= ldac2 or stac2 or jump2 or jmpzx2 or jpnzx2;
+	  loadir <= fetch3;
+          loadpc <= fetch2 or ldac1 or ldac2 or stac1 or stac2 or jump3 or jmpzx3 or jmpzf1 or jmpzf2 or jpnzx3 or jpnzx1 or jpnzx2;
+	  loadr  <= mvac1;
+	  loadac <= ldac5 or movr1 or adda or suba or inaca or claca or anda or ora or xora or nota;
+	  loadz  <= adda or suba or inaca or claca or anda or ora or xora or nota;
+          alu1  <= adda or suba or inaca;
+	  alu2  <= suba;
+	  alu3  <= ldac5 or movr1 or adda;
+	  alu4  <= suba or inaca;
+	  alu5  <= xora or nota;
+	  alu6  <= ora or nota;
+	  alu7  <= anda or ora or xora or nota;    
+	  incar  <= ldac1 or stac1 or jump1 or jmpzx1 or jpnzx1;
+	  incpc  <= fetch2 or ldac1 or ldac2 or stac1 or stac2 or jmpzf1 or jmpzf2 or jpnzf1 or jpnzf2;
+	  memorybus <= fetch2 or ldac1 or ldac2 or ldac4 or stac1 or stac2 or jump1 or jump2 or jmpzx1 or jmpzx2 or jpnzx1 or jpnzx2;
+	  busmemory <= stac5;
+	  drhbus <= ldac3 or stac3 or jump3 or jmpzx3 or jpnzx3;
+	  drlbus <= ldac5 or stac5;
+	  pcbus  <= fetch1 or fetch3;
+	  bustr  <= ldac3 or stac3 or jump3 or jmpzx3 or jpnzx3;
+	  busr   <= movr1 or adda or suba or anda or ora or xora;
+	  busac  <= stac4 or mvac1;
+
+          clr <= nop1 or ldac5 or stac5 or mvac1 or movr1 or jump3 or jmpzx3 or jmpzf2
+	         or jpnzx3 or jpnzf2 or adda or suba or inaca or claca or anda
+		  or ora or xora or nota;
+				
+	  inc <= not clr;
+	  
+end architecture;
+
